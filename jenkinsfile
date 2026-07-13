@@ -3,7 +3,7 @@ pipeline {
     agent any
 
     environment {
-        SSH_CREDENTIAL = 'node-key'
+        SSH_CREDENTIAL = 'webpage'
         REMOTE_USER = 'ubuntu'
     }
 
@@ -35,12 +35,15 @@ pipeline {
 
 
         stage('Terraform Apply') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform apply -auto-approve'
-                }
-            }
+       steps {
+        dir('terraform') {
+            sh '''
+            terraform apply \
+            -auto-approve
+            '''
         }
+    }
+}
 
 
         stage('Get Target Server IP') {
@@ -92,24 +95,20 @@ pipeline {
         }
 
 
-        stage('Run Ansible Configuration') {
+       stage('Run Ansible Configuration') {
+    steps {
+        sshagent([SSH_CREDENTIAL]) {
 
-            steps {
+            sh '''
+            ansible-playbook \
+            -i ansible/inventory \
+            ansible/playbook/main.yml \
+            -e "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+            '''
 
-                sshagent([SSH_CREDENTIAL]) {
-
-                    sh """
-
-                    ansible-playbook \
-                    -i ansible/inventory \
-                    ansible/playbook/main.yml
-
-                    """
-
-                }
-
-            }
         }
+    }
+}
 
     }
 

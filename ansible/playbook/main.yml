@@ -1,6 +1,6 @@
 ---
 - name: install dependency
-  host: 
+  host: web
   become: true
   tasks: installation
   - name: install nginx
