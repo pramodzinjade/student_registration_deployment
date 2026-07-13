@@ -4,7 +4,7 @@
   become: true
   tasks: installation
   - name: install nginx
-    ansible.builtin.dnf:
+    ansible.builtin.apt:
       name: nginx
       state: present
   - name: start and enable nginx
