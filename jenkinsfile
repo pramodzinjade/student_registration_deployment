@@ -1,0 +1,131 @@
+pipeline {
+
+    agent any
+
+    environment {
+        SSH_CREDENTIAL = 'node-key'
+        REMOTE_USER = 'ubuntu'
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+
+        stage('Terraform Init') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+
+        stage('Terraform Plan') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform plan'
+                }
+            }
+        }
+
+
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+
+        stage('Get Target Server IP') {
+
+            steps {
+
+                script {
+
+                    env.SERVER_IP = sh(
+                        script: 'cd terraform && terraform output -raw public_ip',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Target Server IP: ${SERVER_IP}"
+
+                }
+            }
+        }
+
+
+        stage('Create Ansible Inventory') {
+
+            steps {
+
+                sh """
+                echo "[web]" > ansible/inventory
+                echo "${SERVER_IP} ansible_user=${REMOTE_USER}" >> ansible/inventory
+                """
+
+            }
+        }
+
+
+        stage('Test SSH Connection') {
+
+            steps {
+
+                sshagent([SSH_CREDENTIAL]) {
+
+                    sh """
+                    ssh -o StrictHostKeyChecking=no \
+                    ${REMOTE_USER}@${SERVER_IP} \
+                    "echo SSH connection successful"
+                    """
+
+                }
+
+            }
+        }
+
+
+        stage('Run Ansible Configuration') {
+
+            steps {
+
+                sshagent([SSH_CREDENTIAL]) {
+
+                    sh """
+
+                    ansible-playbook \
+                    -i ansible/inventory \
+                    ansible/playbook/main.yml
+
+                    """
+
+                }
+
+            }
+        }
+
+    }
+
+
+    post {
+
+        success {
+            echo "✅ Infrastructure created and application deployed successfully"
+            echo "Application URL: http://${SERVER_IP}"
+        }
+
+
+        failure {
+            echo "❌ Deployment failed"
+        }
+
+    }
+
+}
