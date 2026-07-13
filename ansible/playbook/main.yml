@@ -1,22 +1,26 @@
 ---
 - name: install dependency
-  host: web
+  hosts: web
   become: true
-  tasks: installation
-   - name: install nginx
-     ansible.builtin.apt:
-      name: nginx
-      state: present
-   - name: start and enable nginx
-     ansible.builtin.service:
-      name: nginx
-      state: started
-      enable: true
-   - name: copy the file 
-     ansible.builtin.copy:
-      src: ../files/index.html
-      dest: /var/www/html/index.html
-   - name: restart nginx
-     ansible.builtin.service:
-      name: nginx
-      state: restarted
+
+  tasks:
+    - name: install nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: start and enable nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: copy the file
+      ansible.builtin.copy:
+        src: ../files/index.html
+        dest: /var/www/html/index.html
+
+    - name: restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
