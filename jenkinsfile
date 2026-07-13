@@ -62,6 +62,14 @@ pipeline {
                 }
             }
         }
+        stage('Wait for Server Boot') {
+    steps {
+        sh '''
+        echo "Waiting for server to initialize..."
+        sleep 60
+        '''
+    }
+}
 
 
         stage('Create Ansible Inventory') {
